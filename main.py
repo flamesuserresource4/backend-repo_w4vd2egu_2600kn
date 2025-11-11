@@ -1,8 +1,10 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+from database import create_document
 
-app = FastAPI()
+app = FastAPI(title="Gelang Hitam API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +16,11 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
+    return {"message": "Gelang Hitam Backend is live"}
 
 @app.get("/api/hello")
 def hello():
-    return {"message": "Hello from the backend API!"}
+    return {"message": "Selamat datang di Gelang Hitam!"}
 
 @app.get("/test")
 def test_database():
@@ -63,6 +65,18 @@ def test_database():
     response["database_name"] = "✅ Set" if os.getenv("DATABASE_NAME") else "❌ Not Set"
     
     return response
+
+# Simple newsletter subscription endpoint for the landing page
+class SubscribePayload(BaseModel):
+    email: EmailStr
+
+@app.post("/api/subscribe")
+def subscribe(payload: SubscribePayload):
+    try:
+        sub_id = create_document("subscription", {"email": payload.email})
+        return {"success": True, "id": sub_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
